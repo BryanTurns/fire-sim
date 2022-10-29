@@ -19,32 +19,26 @@ from pygame.locals import (
 )
 
 # Define constants for the screen width and height
-
+CONTROLS_HEIGHT = 200
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 1000
-TREE_WIDTH = 100
-TREE_HEIGHT = 100
+ENTITY_WIDTH = 100
+ENTITY_HEIGHT = 100
  # Define a player object by extending pygame.sprite.Sprite
     # The surface drawn on the screen is now an attribute of 'player'
-class Tree(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        super(Tree, self).__init__()
-        self.x = x 
+class Entity(pygame.sprite.Sprite):
+    def __init__(self, x, y, fuel, flamability):
+        super(Entity, self).__init__()
+        self.x = x
         self.y = y
-        self.surf = pygame.Surface((TREE_WIDTH, TREE_HEIGHT))
-        # Random amount of fuel
-        self.fuel = random.randrange(50, 100)
-        # Determine tree color based off fuel amount
-        self.surf.fill((0, 155+self.fuel, 0))
-        self.image= pygame.image.load("C:/Users/bryan/Downloads/tree.png")
-        self.rect = self.surf.get_rect()
-        self.flamability = 0.1
+        self.fuel = fuel
+        self.flamability = flamability
+        self.surf = pygame.Surface((ENTITY_WIDTH, ENTITY_HEIGHT))
         self.onFire = False
     
     def setOnFire(self):
         self.onFire = True
         self.surf.fill((self.fuel, 0, 0))
-    
     def burn(self):
         self.fuel -= random.randrange(0, 10)
         if self.fuel <= 0:
@@ -52,6 +46,16 @@ class Tree(pygame.sprite.Sprite):
             self.surf.fill((0, 0 , 0))
             return
         self.surf.fill((self.fuel+ 100, 0, 0))
+
+
+class Tree(Entity):
+    def __init__(self, x, y):
+        fuel = random.randrange(50, 100)
+        super(Tree, self).__init__(x, y, fuel, 0.1)
+
+        self.surf.fill((0, 155+self.fuel, 0))
+        self.rect = self.surf.get_rect()
+
 
     
 def main():
@@ -63,15 +67,15 @@ def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     # Create and populate tree list
-    trees = []
-    for i in range(round(SCREEN_WIDTH / TREE_WIDTH)):
-        for k in range(round(SCREEN_HEIGHT / TREE_HEIGHT)):
-            trees.append(Tree(i, k))
+    entities = []
+    for i in range(round(SCREEN_WIDTH / ENTITY_WIDTH)):
+        for k in range(round((SCREEN_HEIGHT - CONTROLS_HEIGHT)/ ENTITY_HEIGHT)):
+            entities.append(Tree(i, k))
 
     # Variable to keep the main loop running
     running = True
 
-    trees[0].setOnFire()
+    entities[0].setOnFire()
 
     # Main loop
     firstRun = True
@@ -90,17 +94,18 @@ def main():
                 running = False
 
         # Fill the screen with black
-        screen.fill((0, 0, 0))
+        screen.fill((255, 255, 255))
         print("New game cycle")
         # Draw the trees on the screen
-        for treeOne in trees:
+        for treeOne in entities:
             # If the current tree is not on fire, draw the tree as normal
+            screen.blit(treeOne.surf, (treeOne.x*ENTITY_WIDTH, CONTROLS_HEIGHT + treeOne.y * ENTITY_HEIGHT))
+
             if not treeOne.onFire:
-                screen.blit(treeOne.surf, (treeOne.x*TREE_WIDTH, treeOne.y * TREE_HEIGHT))
                 continue
             treeOne.burn()
             # If the current tree is on fire, check if it lights other trees on fire
-            for treeTwo in trees:
+            for treeTwo in entities:
                 # If the tree is already on fire, no need to see if it will be lit
                 if treeTwo.onFire or treeTwo.fuel <= 0:
                     continue
@@ -117,7 +122,7 @@ def main():
                 if  val <= fireChance:
                     treeTwo.setOnFire()
             # Draw the current tree on screen
-            screen.blit(treeOne.surf, (treeOne.x*TREE_WIDTH, treeOne.y * TREE_HEIGHT))
+            screen.blit(treeOne.surf, (treeOne.x*ENTITY_WIDTH, CONTROLS_HEIGHT + treeOne.y * ENTITY_HEIGHT))
 
 
         # Update the display
