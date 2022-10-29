@@ -22,8 +22,8 @@ from pygame.locals import (
 
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 1000
-TREE_WIDTH = 10
-TREE_HEIGHT = 10
+TREE_WIDTH = 100
+TREE_HEIGHT = 100
  # Define a player object by extending pygame.sprite.Sprite
     # The surface drawn on the screen is now an attribute of 'player'
 class Tree(pygame.sprite.Sprite):
@@ -74,7 +74,10 @@ def main():
     trees[0].setOnFire()
 
     # Main loop
+    firstRun = True
     while running:
+        sleep(0.25)
+
         # for loop through the event queue
         for event in pygame.event.get():
             # Check for KEYDOWN event
@@ -95,7 +98,6 @@ def main():
             if not treeOne.onFire:
                 screen.blit(treeOne.surf, (treeOne.x*TREE_WIDTH, treeOne.y * TREE_HEIGHT))
                 continue
-            print(f"x:{treeOne.x}, y:{treeOne.y}, fuel:{treeOne.fuel}")
             treeOne.burn()
             # If the current tree is on fire, check if it lights other trees on fire
             for treeTwo in trees:
@@ -117,7 +119,6 @@ def main():
             # Draw the current tree on screen
             screen.blit(treeOne.surf, (treeOne.x*TREE_WIDTH, treeOne.y * TREE_HEIGHT))
 
-        sleep(1)
 
         # Update the display
         pygame.display.flip()
