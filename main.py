@@ -22,8 +22,8 @@ from pygame.locals import (
 CONTROLS_HEIGHT = 200
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 1000
-ENTITY_WIDTH = 100
-ENTITY_HEIGHT = 100
+ENTITY_WIDTH = 30
+ENTITY_HEIGHT = 30
  # Define a player object by extending pygame.sprite.Sprite
     # The surface drawn on the screen is now an attribute of 'player'
 class Entity(pygame.sprite.Sprite):
@@ -35,6 +35,7 @@ class Entity(pygame.sprite.Sprite):
         self.flamability = flamability
         self.surf = pygame.Surface((ENTITY_WIDTH, ENTITY_HEIGHT))
         self.onFire = False
+        self.rect = self.surf.get_rect()
     
     def setOnFire(self):
         self.onFire = True
@@ -51,13 +52,30 @@ class Entity(pygame.sprite.Sprite):
 class Tree(Entity):
     def __init__(self, x, y):
         fuel = random.randrange(50, 100)
-        super(Tree, self).__init__(x, y, fuel, 0.1)
-
+        flamability = 0.1
+        super(Tree, self).__init__(x, y, fuel, flamability)
         self.surf.fill((0, 155+self.fuel, 0))
-        self.rect = self.surf.get_rect()
 
+class Water(Entity):
+    def __init__(self, x, y):
+        fuel = 0
+        flamability = 0
+        super(Water, self).__init__(x, y, fuel, flamability)
+        self.surf.fill((65,105,225))
 
-    
+class Road(Entity):
+    def __init__(self, x, y):
+        fuel = 0
+        flamability = 0
+        super(Road, self).__init__(x, y, fuel, flamability)
+        self.surf.fill((105,105,105))
+
+class House(Entity):
+    def __init__(self, x, y):
+        fuel = 200
+        flamability = 0
+        super(House, self).__init__(x, y, fuel, flamability)
+
 def main():
     # Initialize pygame
     pygame.init()
