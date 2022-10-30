@@ -110,12 +110,21 @@ def basicInitialization():
     return entities
 
 def startupLoop(entities, screen):
-    startButton = Button(
-                "Start",
+    buttonList = []
+    buttonList.append(Button(
+                "Basic Sim",
                 (100,100),
                 font=30,
-                bg="navy",
-                feedback="You clicked")
+                bg="red",
+                feedback="You clicked"))
+    buttonList.append(Button(
+            "Pleasanton Sim",
+            (400, 100),
+            font = 30, 
+            bg="red",
+            feedback="lol"
+    ))
+
     while True:
         # for loop through the event queue
         for event in pygame.event.get():
@@ -124,16 +133,16 @@ def startupLoop(entities, screen):
                 # If the Esc key is pressed, then exit the main loop
                 if event.key == K_ESCAPE:
                     pygame.quit()
-                elif event.key == K_s:
-                    return
-                elif event.key == K_l:
-                    loadArray()
             # Check for QUIT event. If QUIT, then set running to false.
             elif event.type == QUIT:
                 pygame.quit()
-            if startButton.click(event):
+
+            if buttonList[0].click(event):
                 return
-            
+            if buttonList[1].click(event):
+                loadPleasanton()
+                return
+        
         # Lets you draw water
         if pygame.mouse.get_pressed()[0]:
             mouseX = pygame.mouse.get_pos()[0]
@@ -150,8 +159,8 @@ def startupLoop(entities, screen):
             screen.blit(entity.surf, (entity.x*ENTITY_WIDTH, CONTROLS_HEIGHT + entity.y * ENTITY_HEIGHT)) 
 
 
-        
-        startButton.show(screen)
+        for button in buttonList:
+            button.show(screen)
         pygame.display.flip()
 
 def startFire(entities):
@@ -213,7 +222,7 @@ def mainLoop(entities, screen):
         # Update the display
         pygame.display.flip()
     
-def loadArray(array, entities):
+def loadPleasanton(array, entities):
     
 
     for row in array:
