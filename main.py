@@ -55,7 +55,7 @@ class Entity(pygame.sprite.Sprite):
             self.onFire = False
             self.surf.fill((0, 0 , 0))
             return
-        self.surf.fill((self.fuel+ 100, 0, 0))
+        self.surf.fill((self.fuel, 0, 0))
 
 
 class Tree(Entity):
@@ -82,10 +82,12 @@ class Road(Entity):
 class House(Entity):
     def __init__(self, x, y):
         fuel = 200
-        flamability = 0
+        flamability = 0.05
         super(House, self).__init__(x, y, fuel, flamability)
+        self.surf.fill((150, 75, 0))
 
 def main():
+    
     # Initialize pygame
     pygame.init()
 
@@ -115,16 +117,36 @@ def startupLoop(entities, screen):
                 "Basic Sim",
                 (100,100),
                 font=30,
-                bg="red",
+                bg="blue",
                 feedback="You clicked"))
     buttonList.append(Button(
             "Pleasanton Sim",
-            (400, 100),
+            (300, 100),
             font = 30, 
-            bg="red",
+            bg="blue",
             feedback="lol"
     ))
-
+    buttonList.append(Button(
+        "Road",
+        (500, 100),
+        font=30,
+        bg="blue",
+        feedback="Road"
+    ))
+    buttonList.append(Button(
+        "House",
+        (600, 100),
+        font=30,
+        bg="blue",
+        feedback="House"
+    ))
+    buttonList.append(Button(
+        "Water",
+        (700, 100),
+        font=30,
+        bg="blue",
+        feedback="Water"
+    ))
     while True:
         # for loop through the event queue
         for event in pygame.event.get():
@@ -142,19 +164,49 @@ def startupLoop(entities, screen):
             if buttonList[1].click(event):
                 loadPleasanton()
                 return
+            if buttonList[2].click(event):
+                for button in buttonList:
+                    if button != buttonList[2] and button.on:
+                        button.change_text(button.original, "blue")
+                        button.on = False
+            if buttonList[3].click(event):
+                for button in buttonList:
+                    if button != buttonList[3] and button.on:
+                        button.change_text(button.original, "blue")
+                        button.on = False
+            if buttonList[4].click(event):
+                for button in buttonList:
+                    if button != buttonList[4] and button.on:
+                        button.change_text(button.original, "blue")
+                        button.on = False
+
         
         # Lets you draw water
+        
         if pygame.mouse.get_pressed()[0]:
+            
             mouseX = pygame.mouse.get_pos()[0]
             mouseY = pygame.mouse.get_pos()[1] - CONTROLS_HEIGHT
             column = int(mouseX / ENTITY_WIDTH)
             row = int(mouseY / ENTITY_HEIGHT)
-                
-            for i, entity in enumerate(entities):
-                if entity.x == column and entity.y == row:
-                    entities.pop(i)
-                    entities.append(Water(column, row))
+            if buttonList[2].on:  
+                for i, entity in enumerate(entities):
+                    if entity.x == column and entity.y == row:
+                        entities.pop(i)
+                        entities.append(Road(column, row))
+            elif buttonList[3].on:
+                for i, entity in enumerate(entities):
+                    if entity.x == column and entity.y == row:
+                        entities.pop(i)
+                        entities.append(House(column, row))
+            elif buttonList[4].on:
+                for i, entity in enumerate(entities):
+                    if entity.x == column and entity.y == row:
+                        entities.pop(i)
+                        entities.append(Water(column, row))
 
+            
+        
         for entity in entities:
             screen.blit(entity.surf, (entity.x*ENTITY_WIDTH, CONTROLS_HEIGHT + entity.y * ENTITY_HEIGHT)) 
 
