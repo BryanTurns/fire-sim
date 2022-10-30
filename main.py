@@ -28,8 +28,8 @@ from pygame.locals import (
 CONTROLS_HEIGHT = 200
 SCREEN_HEIGHT = 1000
 SCREEN_WIDTH = SCREEN_HEIGHT - CONTROLS_HEIGHT
-FLAME_RADIUS = 3
-ENTITY_WIDTH = 5
+FLAME_RADIUS = 5
+ENTITY_WIDTH = 10
 ENTITY_HEIGHT = ENTITY_WIDTH
 
 SIMULATION_HEIGHT = SCREEN_HEIGHT - CONTROLS_HEIGHT
@@ -180,7 +180,7 @@ def startupLoop(entities, screen):
                 return entities
             if buttonList[1].click(event):
                 entities = loadPleasanton(entities)
-                return entities
+                # return entities
             if buttonList[2].click(event):
                 for button in buttonList:
                     if button != buttonList[2] and button.on:
@@ -218,7 +218,8 @@ def startupLoop(entities, screen):
                 for i, entity in enumerate(entities):
                     if entity.x == column and entity.y == row:
                         entities.pop(i)
-                        entities.append(House(column, row))
+                        entities.insert(i, House(column, row))
+                        print(entities[-1].fuel)
             elif buttonList[4].on:
                 for i, entity in enumerate(entities):
                     if entity.x == column and entity.y == row:
@@ -301,7 +302,7 @@ def mainLoop(entities, screen, data):
                     # Calculate the distance between tree one and tree two 
                     dx = entityOne.x - entityTwo.x
                     dy = entityOne.y - entityTwo.y
-                    distance = sqrt(pow(dx, 2) + pow(dy, 2))
+                    distance = sqrt(pow(dx, 4) + pow(dy, 2))
                     if distance > 10:
                         continue
 
@@ -331,7 +332,7 @@ def loadPleasanton(entities):
     
     entities = []
     # arr = Ret.ret_arr(800)
-    arr = Ret.ret_arr(int(SCREEN_WIDTH/ENTITY_WIDTH), show=True)
+    arr = Ret.ret_arr(int(SCREEN_WIDTH/ENTITY_WIDTH), show=False)
     for i, row in enumerate(arr):
         for j, col in enumerate(row):
             if np.array_equal(col , [255,255,255]):
