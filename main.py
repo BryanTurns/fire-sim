@@ -6,6 +6,7 @@ from time import sleep
 import pygame
 import random
 from math import sqrt
+from button import Button
 # Import pygame.locals for easier access to key coordinates
 # Updated to conform to flake8 and black standards
 from pygame.locals import (
@@ -109,6 +110,12 @@ def basicInitialization():
     return entities
 
 def startupLoop(entities, screen):
+    startButton = Button(
+                "Start",
+                (100,100),
+                font=30,
+                bg="navy",
+                feedback="You clicked")
     while True:
         # for loop through the event queue
         for event in pygame.event.get():
@@ -124,7 +131,9 @@ def startupLoop(entities, screen):
             # Check for QUIT event. If QUIT, then set running to false.
             elif event.type == QUIT:
                 pygame.quit()
-           
+            if startButton.click(event):
+                return
+            
         # Lets you draw water
         if pygame.mouse.get_pressed()[0]:
             mouseX = pygame.mouse.get_pos()[0]
@@ -139,6 +148,10 @@ def startupLoop(entities, screen):
 
         for entity in entities:
             screen.blit(entity.surf, (entity.x*ENTITY_WIDTH, CONTROLS_HEIGHT + entity.y * ENTITY_HEIGHT)) 
+
+
+        
+        startButton.show(screen)
         pygame.display.flip()
 
 def startFire(entities):
