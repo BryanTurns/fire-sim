@@ -11,9 +11,9 @@ from math import sqrt
 from button import Button
 from im_resize import Ret
 import numpy as np
-from numba import jit, cuda
 from timeit import default_timer as timer
-from numba import jit, cuda
+from flameChart import graphData
+
 
 # Import pygame.locals for easier access to key coordinates
 # Updated to conform to flake8 and black standards
@@ -30,8 +30,8 @@ from pygame.locals import (
 CONTROLS_HEIGHT = 200
 SCREEN_HEIGHT = 1000
 SCREEN_WIDTH = SCREEN_HEIGHT - CONTROLS_HEIGHT
-FLAME_RADIUS = 5
-ENTITY_WIDTH = 10
+FLAME_RADIUS = 3
+ENTITY_WIDTH = 7
 ENTITY_HEIGHT = ENTITY_WIDTH
 
 SIMULATION_HEIGHT = SCREEN_HEIGHT - CONTROLS_HEIGHT
@@ -43,6 +43,7 @@ class Entity(pygame.sprite.Sprite):
         super(Entity, self).__init__()
         self.x = x
         self.y = y
+        self.burned = False
         self.fuel = fuel
         self.flamability = flamability
         self.surf = pygame.Surface((ENTITY_WIDTH, ENTITY_HEIGHT))
@@ -53,9 +54,10 @@ class Entity(pygame.sprite.Sprite):
         self.onFire = True
         self.surf.fill((self.fuel, 0, 0))
     def burn(self):
-        self.fuel -= random.randrange(0, 10)
+        self.fuel -= 10
         if self.fuel <= 0:
             self.onFire = False
+            self.burned = True
             self.surf.fill((0, 0 , 0))
             return
         self.surf.fill((self.fuel, 0, 0))
@@ -63,7 +65,7 @@ class Entity(pygame.sprite.Sprite):
 class Tree(Entity):
     def __init__(self, x, y):
         fuel = random.randrange(50, 100)
-        flamability = 0.1
+        flamability = 0.2
         super(Tree, self).__init__(x, y, fuel, flamability)
         self.surf.fill((0, 155+self.fuel, 0))
 
@@ -84,7 +86,7 @@ class Road(Entity):
 class House(Entity):
     def __init__(self, x, y):
         fuel = 200
-        flamability = 0.05
+        flamability = 0.025
         super(House, self).__init__(x, y, fuel, flamability)
         self.surf.fill((150, 75, 0))
     
@@ -121,14 +123,36 @@ def main():
         startTimer = timer()
         mainLoop(entities, screen, data)
         print(f"TOTAL TIME: {timer()-startTimer}" )
+        graphData(data)
+    #imported image
+    myimage = pygame_menu.baseimage.BaseImage(
+        image_path = "bush.jpg",
+        drawing_mode = pygame_menu.baseimage.IMAGE_MODE_REPEAT_XY)
+    
     #Custom Theme
     mytheme= themes.THEME_GREEN.copy()
     mytheme.title_font = pygame_menu.font.FONT_8BIT
+    mytheme.background_color = myimage
+    mytheme.title_background_color = "black"
+    mytheme.widget_background_color ="black"
+    mytheme.widget_border_color = "white"
+    mytheme.widget_border_width = 1
+    mytheme.cursor_selection_color = "grey"
 
     #Menu    
-    mainmenu = pygame_menu.Menu('Fire Simulation', SCREEN_WIDTH, SCREEN_WIDTH, theme=mytheme)
+    mainmenu = pygame_menu.Menu('Fire Simulation', SCREEN_WIDTH, 500, theme=mytheme)
+
+    HELP = "Select a simulation\n"\
+        "Protect the community from wildfires\n"\
+        "Obstruct fires with water and roadworks\n"\
+        "Flammability is calculated based on material"
+    def help_():
+        mainmenu._open(help_menu)
     mainmenu.add.button('Start Simulation', start, font_name = pygame_menu.font.FONT_MUNRO)
+    mainmenu.add.button('Help', help_, font_name = pygame_menu.font.FONT_MUNRO)
     mainmenu.add.button('Quit', quit, font_name = pygame_menu.font.FONT_MUNRO)
+    help_menu = pygame_menu.Menu('About', 600, 400, theme = mytheme)
+    help_menu.add.label(HELP, max_char = -1, font_size = 20)
     menuRun = True
     while menuRun:
         events = pygame.event.get()
@@ -245,23 +269,23 @@ def startupLoop(entities, screen):
                 for i, entity in enumerate(entities):
                     if entity.x == column and entity.y == row:
                         entities.pop(i)
-                        entities.append(Road(column, row))
+                        entities.insert(i, Road(column, row))
             elif buttonList[3].on:
                 for i, entity in enumerate(entities):
                     if entity.x == column and entity.y == row:
                         entities.pop(i)
                         entities.insert(i, House(column, row))
-                        print(entities[-1].fuel)
             elif buttonList[4].on:
                 for i, entity in enumerate(entities):
                     if entity.x == column and entity.y == row:
                         entities.pop(i)
-                        entities.append(Water(column, row))
+
+                        entities.insert(i, Water(column, row))
             elif buttonList[5].on:
                 for i, entity in enumerate(entities):
                     if entity.x == column and entity.y == row:
                         entities.pop(i)
-                        entities.append(FireBreak(column, row))
+                        entities.insert(i, FireBreak(column, row))
         
         for entity in entities:
             screen.blit(entity.surf, (entity.x*ENTITY_WIDTH, CONTROLS_HEIGHT + entity.y * ENTITY_HEIGHT)) 
@@ -282,13 +306,21 @@ def startFire(entities):
 # @jit(target_backend='cuda')                         
 def mainLoop(entities, screen, data):
     data["flameCount"] = []    
+    data["totalFireChance"] = []
+    data["blocksBurned"] = []
+    data["percentBurned"] = []
+    data["numBlocks"] = len(entities)
     collectData = True
     # Main loop
     loopCount = 0
     running = True
     while running:
+        print(loopCount)
         if collectData:
             data["flameCount"].append(0)
+            data["totalFireChance"].append(0)
+            data["blocksBurned"].append(0)
+            data["percentBurned"].append(0)
         # for loop through the event queue
         for event in pygame.event.get():
             # Check for KEYDOWN event
@@ -309,6 +341,8 @@ def mainLoop(entities, screen, data):
          # If the current tree is not on fire, draw the tree as normal
             
             if not entityOne.onFire:
+                if entityOne.burned and collectData:
+                    data["blocksBurned"][loopCount] += 1
                 screen.blit(entityOne.surf, (entityOne.x*ENTITY_WIDTH, CONTROLS_HEIGHT + entityOne.y * ENTITY_HEIGHT))
                 continue
             if collectData:
@@ -325,7 +359,7 @@ def mainLoop(entities, screen, data):
                 while currentCol > int(np.negative(FLAME_RADIUS)):
                     # print(f"row: {currentCol}")
                     entityTwoIndex = int(index + currentCol + currentRow * (SCREEN_WIDTH / ENTITY_WIDTH))
-                    if len(entities) <= entityTwoIndex and entityTwoIndex > 0:
+                    if len(entities) <= entityTwoIndex or entityTwoIndex < 0:
                         currentCol -= 1
                         continue
                     entityTwo = entities[entityTwoIndex]
@@ -335,13 +369,14 @@ def mainLoop(entities, screen, data):
                     # Calculate the distance between tree one and tree two 
                     dx = entityOne.x - entityTwo.x
                     dy = entityOne.y - entityTwo.y
-                    distance = sqrt(pow(dx, 4) + pow(dy, 2))
+                    distance = sqrt(pow(dx, 2) + pow(dy, 2))
                     if distance > 10:
                         continue
 
                     # Determine how likely a tree is to be lit on fire
                     fireChance = (1 / (pow(distance, 2))) * entityTwo.flamability 
-
+                    if collectData:
+                        data["totalFireChance"][loopCount] += fireChance
 
                     # Check if the tree will get lit on fire
                     val = random.random()
@@ -354,7 +389,7 @@ def mainLoop(entities, screen, data):
 
         # Update the display
         pygame.display.flip()
-        print(f"Time:{timer()-start}")
+        # print(f"Time:{timer()-start}")
         if collectData:
             if data["flameCount"][loopCount] == 0:
                 collectData = False
