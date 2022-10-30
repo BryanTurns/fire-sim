@@ -7,12 +7,12 @@ from math import sqrt
 np.set_printoptions(threshold=sys.maxsize)
 
 class Ret:
-    def ret_arr(num_pixels, show = False):
-        road = (255,255,255)
+    def ret_arr(num_pixels, path, show = False):
+        road = (245,35,93)
         parking = (135,145,148)
         trees = (137,159,68)
         trees_dark= (24,35,33)
-        # buildings = (245,245,245)
+        buildings = (245,245,245)
         water = (255,0,214)
         light_water = (88,183,135)
         blue_parking = (43,58,67)
@@ -20,7 +20,7 @@ class Ret:
         COLORS = (
             road,
             trees,
-            # buildings,
+            buildings,
             water,
             parking,
             # blue_parking,
@@ -40,7 +40,7 @@ class Ret:
             return min(color_diffs)[1]
 
         
-        im = Image.open('C:/Users/bryan/Documents/code/pygameTest/pink4.jpg')
+        im = Image.open(path)
         width, height = im.size   # Get dimensions
 
         new = 512*3

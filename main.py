@@ -5,12 +5,16 @@
 from time import sleep
 import pygame
 import random
+import pygame_menu #pip install this
+from pygame_menu import themes
 from math import sqrt
 from button import Button
 from im_resize import Ret
 import numpy as np
 from numba import jit, cuda
 from timeit import default_timer as timer
+from numba import jit, cuda
+
 # Import pygame.locals for easier access to key coordinates
 # Updated to conform to flake8 and black standards
 from pygame.locals import (
@@ -21,8 +25,6 @@ from pygame.locals import (
     QUIT,
     MOUSEBUTTONDOWN
 )
-
-
 
 # Define constants for the screen width and height
 CONTROLS_HEIGHT = 200
@@ -103,16 +105,46 @@ def main():
     # The size is determined by the constant SCREEN_WIDTH and SCREEN_HEIGHT
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
+
     # Create and populate tree list
-    entities = basicInitialization()
-    entities = startupLoop(entities, screen)
-    startFire(entities)
+    #entities = basicInitialization()
+    
+    def start():
+        menuRun = False
+        pygame.display.quit()
+        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        entities = basicInitialization()
+        entities = startupLoop(entities, screen)
+        
+        startFire(entities)
 
-    start = timer()
-    mainLoop(entities, screen, data)
-    print(timer()-start)
+        startTimer = timer()
+        mainLoop(entities, screen, data)
+        print(f"TOTAL TIME: {timer()-startTimer}" )
+    #Custom Theme
+    mytheme= themes.THEME_GREEN.copy()
+    mytheme.title_font = pygame_menu.font.FONT_8BIT
 
-    print(data)
+    #Menu    
+    mainmenu = pygame_menu.Menu('Fire Simulation', SCREEN_WIDTH, SCREEN_WIDTH, theme=mytheme)
+    mainmenu.add.button('Start Simulation', start, font_name = pygame_menu.font.FONT_MUNRO)
+    mainmenu.add.button('Quit', quit, font_name = pygame_menu.font.FONT_MUNRO)
+    menuRun = True
+    while menuRun:
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                exit()
+    
+        if mainmenu.is_enabled():
+            mainmenu.update(events)
+            mainmenu.draw(screen)
+
+        pygame.display.update() 
+
+    #print(timer()-start)
+
+    #print(data)
 
 def basicInitialization():
     entities = []
@@ -134,7 +166,7 @@ def startupLoop(entities, screen):
             (300, 100),
             font = 30, 
             bg="blue",
-            feedback="lol"
+            feedback="Pleasanton Sim"
     ))
     buttonList.append(Button(
         "Road",
@@ -247,6 +279,7 @@ def startFire(entities):
         randEntity.setOnFire()
         break
 
+# @jit(target_backend='cuda')                         
 def mainLoop(entities, screen, data):
     data["flameCount"] = []    
     collectData = True
@@ -332,10 +365,10 @@ def loadPleasanton(entities):
     
     entities = []
     # arr = Ret.ret_arr(800)
-    arr = Ret.ret_arr(int(SCREEN_WIDTH/ENTITY_WIDTH), show=False)
+    arr = Ret.ret_arr(int(SCREEN_WIDTH/ENTITY_WIDTH), 'C:/Users/bryan/Documents/code/pygameTest/red_pink.jpg', True)
     for i, row in enumerate(arr):
         for j, col in enumerate(row):
-            if np.array_equal(col , [255,255,255]):
+            if np.array_equal(col , [245,35,93]):
                 #make tile a road color 
                 entities.append(Road(j, i))
                 
@@ -352,6 +385,7 @@ def loadPleasanton(entities):
             if np.array_equal(col , [88,183,135]) or np.array_equal(col , [255,0,214]):
                 #make it a water color
                 entities.append(Water(j, i))
+            
 
     print(f"LENGTH: {len(entities)}")
     return entities

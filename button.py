@@ -6,7 +6,7 @@ class Button:
     def __init__(self, text,  pos, font, bg="black", feedback=""):
         self.x, self.y = pos
         self.original = text
-        self.font = pygame.font.SysFont("Arial", font)
+        self.font = pygame.font.SysFont("Rockwell Condensed", font)
         self.on = False
         if feedback == "":
             self.feedback = "text"
