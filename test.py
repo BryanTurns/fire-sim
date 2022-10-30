@@ -124,13 +124,17 @@ def startupLoop(entities, screen):
             # Check for QUIT event. If QUIT, then set running to false.
             elif event.type == QUIT:
                 pygame.quit()
+            # elif event.type == pygame.MOUSEBUTTONDOWN:
            
-        # Lets you draw water
+        
         if pygame.mouse.get_pressed()[0]:
+            # print("Mouse Down!")
             mouseX = pygame.mouse.get_pos()[0]
             mouseY = pygame.mouse.get_pos()[1] - CONTROLS_HEIGHT
+            # print(f"x:{mouseX} y:{mouseY}")
             column = int(mouseX / ENTITY_WIDTH)
             row = int(mouseY / ENTITY_HEIGHT)
+            # print(f"Collumn: {column} row: {row}")
                 
             for i, entity in enumerate(entities):
                 if entity.x == column and entity.y == row:
