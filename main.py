@@ -88,6 +88,7 @@ class House(Entity):
 
 def main():
     
+    data = {}
     # Initialize pygame
     pygame.init()
 
@@ -100,7 +101,9 @@ def main():
     startupLoop(entities, screen)
     startFire(entities)
 
-    mainLoop(entities, screen)
+    mainLoop(entities, screen, data)
+
+    print(data)
 
 
 
@@ -223,19 +226,23 @@ def startFire(entities):
         randEntity.setOnFire()
         break
 
-def mainLoop(entities, screen):
+def mainLoop(entities, screen, data):
+    data["flameCount"] = []
     # Main loop
-    while True:
+    loopCount = 0
+    running = True
+    while running:
+        data["flameCount"].append(0)
         # for loop through the event queue
         for event in pygame.event.get():
             # Check for KEYDOWN event
             if event.type == KEYDOWN:
                 # If the Esc key is pressed, then exit the main loop
                 if event.key == K_ESCAPE:
-                    pygame.quit()
+                    running = False
             # Check for QUIT event. If QUIT, then set running to false.
             elif event.type == QUIT:
-                pygame.quit()
+                running = False
             
 
         # Fill the screen with black
@@ -247,6 +254,7 @@ def mainLoop(entities, screen):
             if not entityOne.onFire:
                 screen.blit(entityOne.surf, (entityOne.x*ENTITY_WIDTH, CONTROLS_HEIGHT + entityOne.y * ENTITY_HEIGHT))
                 continue
+            data["flameCount"][loopCount] += 1
             entityOne.burn()
             # If the current tree is on fire, check if it lights other trees on fire
             for entityTwo in entities:
@@ -273,6 +281,9 @@ def mainLoop(entities, screen):
 
         # Update the display
         pygame.display.flip()
+        if data["flameCount"][loopCount] == 0:
+            return
+        loopCount += 1
     
 def loadPleasanton(array, entities):
     
