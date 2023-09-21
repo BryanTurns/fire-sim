@@ -12,6 +12,15 @@ The help button can be used for a quick reference on how to use the simulation. 
 # Basic Simulation
 <img width="400" alt="fireSim2" src="https://github.com/BryanTurns/fire-sim/assets/95263942/55f4872e-eb82-42c7-af7f-9597697d95a7">
 
-During the initialization of the simulation a 2D array of fuel and flamability values was generated. Fuel indicates how long an "entity" can burn and flamability relates to the odds that the tile will catch fire when exposed to flame. The lighter the color of a tile the more fuel it has remaining. To start the simulation hit ```Basic Sim```. Once the button is pressed, a random tile will be lit on fire. From here the simulation will continue until every bit of fuel is used up. 
+During the initialization of the simulation a 2D array of fuel and flamability values was generated. Fuel indicates how long an "entity" can burn and flamability relates to the odds that the tile will catch fire when exposed to flame. The lighter the color of a tile the more fuel it has remaining. To start the simulation hit ```Basic Sim```. Once the button is pressed, a random tile will be lit on fire. From here the simulation will continue until every bit of fuel is used up. The simulation may be exited at any time by hitting the x on the tab. This will cause a, currently broken, graph that displays a variety of values over time. 
 
 <img width="400" alt="fireSim3" src="https://github.com/BryanTurns/fire-sim/assets/95263942/25aabdd4-63f9-4f9a-8aac-9a474c230fd8">
+<img width="476" alt="fireSim6" src="https://github.com/BryanTurns/fire-sim/assets/95263942/292488c2-479f-4b96-b194-87e8e4a50e97">
+
+# Custom Simulations
+
+To create your own custom enviroment to test fire safety you can use the buttons on the top right of the window to draw onto the simulation and change it's values. The mechanism is pretty slow at processing clicks/drags so for higher definition simulations it can be quite hard to create cusom enviroments. We recomend you use one of our custom simulations, Pleasanton, CA. This simulation is loaded by first pulling data from the Google Maps API. This is then converted into an appropriately pixelated map. The colors in each tile is then evaluated and converted into the apropriate entity type (grass, house, road, and water). 
+
+<img width="400" alt="fireSim4" src="https://github.com/BryanTurns/fire-sim/assets/95263942/e3027172-d85a-485b-96d9-8b90d487f2f6">
+
+# Advanced Custom Simulations
