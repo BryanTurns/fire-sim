@@ -24,3 +24,11 @@ To create your own custom enviroment to test fire safety you can use the buttons
 <img width="400" alt="fireSim4" src="https://github.com/BryanTurns/fire-sim/assets/95263942/e3027172-d85a-485b-96d9-8b90d487f2f6">
 
 # Advanced Custom Simulations
+
+You can change a variety of parameters within the code to change how the simulation will run. Adjusting `FLAME_RADIUS` will change how many tiles a flame can jump. Increasing this value will significantly impact performance. Adjust `ENTITY_WIDTH` to change the resolution of the simulation (smaller width = more tiles). Note that decreasing this value will decrease performance. Adjust `SCREEN_HEIGHT` in order to change the size of the window. 
+
+<img width="400" alt="fireSim10" src="https://github.com/BryanTurns/fire-sim/assets/95263942/e27a231d-c762-42d1-bb11-dff78a66f194">
+<img width="362" alt="fireSim7png" src="https://github.com/BryanTurns/fire-sim/assets/95263942/f57c9014-6201-43ae-9e7a-66ed4e5e7864">
+
+
+
