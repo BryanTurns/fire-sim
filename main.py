@@ -36,10 +36,10 @@ CONTROLS_HEIGHT = 200
 SCREEN_HEIGHT = 1000
 SCREEN_WIDTH = SCREEN_HEIGHT - CONTROLS_HEIGHT
 FLAME_RADIUS = 3
-ENTITY_WIDTH = 2
+ENTITY_WIDTH = 1
 ENTITY_HEIGHT = ENTITY_WIDTH
 BURN_RATE = 10
-SECOND_PER_FRAME_MIN = 0.1
+SECOND_PER_FRAME_MIN = 0.05
 
 SIMULATION_HEIGHT = SCREEN_HEIGHT - CONTROLS_HEIGHT
 
@@ -289,21 +289,8 @@ def mainLoop(entityData, screen, data):
     # Main loop
     loopCount = 0
     running = True
-
-    threadsperblock = (16, 16)
-    blockspergrid_x = ceil(entityData.shape[0] / threadsperblock[0])
-    blockspergrid_y = ceil(entityData.shape[1] / threadsperblock[1])
-    blockspergrid = (blockspergrid_x, blockspergrid_y)
-    print(f"Blocks/grid: {blockspergrid} | Threads per Block {threadsperblock}")
-
-    rng_states = create_xoroshiro128p_states(threadsperblock[0] * threadsperblock[1] *blockspergrid[0]* blockspergrid[1], seed=14575389)
-    d_rng_states = cuda.to_device(rng_states)
-    d_readarray = cuda.to_device(entityData)
-    d_newarray = cuda.to_device(entityData)
-    d_flameradius = FLAME_RADIUS
-    d_burnrate = BURN_RATE
     # d_pixelupdates = cuda.to_device([])
-
+    print("FIRE STARTED")
 
     firstRun = True
     while running:
@@ -320,11 +307,7 @@ def mainLoop(entityData, screen, data):
             elif event.type == QUIT:
                 running = False
             
-        updateFireCuda[blockspergrid, threadsperblock](d_readarray, d_newarray, d_flameradius, d_burnrate, d_rng_states)
-        d_readarray.copy_to_device(d_newarray) 
-        entityData = d_newarray.copy_to_host()    
-        # pixeLUpdates = d_pixelupdates.copy_to_host()
-        # print(pixeLUpdates)
+        entityData = updateFire(entityData)
 
         rects = []
         count = 0
@@ -333,9 +316,9 @@ def mainLoop(entityData, screen, data):
             testArr = []
             for y in range(entityData.shape[0]):
                 for x in range(entityData.shape[1]):
-                    if (entityData[y][x] == prevEntityData[y][x]).all():
-                        continue
-                    elif entityData[y][x][2] == 0:
+                    # if (entityData[y][x] == prevEntityData[y][x]).all():
+                    #     continue
+                    if entityData[y][x][2] == 0:
                         continue
 
                     if entityData[y][x][3] == 0:
@@ -360,7 +343,7 @@ def mainLoop(entityData, screen, data):
     
         while time()-t1 < SECOND_PER_FRAME_MIN:
             sleep(0.05)
-        print(time()-t1)
+
 @jit(nopython=True)
 def updateFire(entityData):
     test = 0
@@ -370,13 +353,12 @@ def updateFire(entityData):
             if entity[2] == 0:
                 continue
     
-            entity[0] -= 10
+            entity[0] -= BURN_RATE
             if entity[0] < 0:
                 entity[0] = 0
                 entity[2] = 0
 
-            #     # If the current tree is on fire, check if it lights other trees on fire
-            # SCREEN_WIDTH / ENTITY_WIDTH gets the number of elements in a row
+    
             yOffset = FLAME_RADIUS
 
             while yOffset > int(np.negative(FLAME_RADIUS)):
