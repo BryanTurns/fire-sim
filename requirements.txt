@@ -1,0 +1,8 @@
+matplotlib==3.5.3
+numba==0.56.3
+numpy==1.23.2
+pandas==1.4.4
+Pillow==9.2.0
+Pillow==10.0.1
+pygame==2.1.2
+pygame_menu==4.2.8

@@ -3,6 +3,7 @@ import numpy as np
 from matplotlib import cm
 import sys
 from math import sqrt
+from numba import jit
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -28,6 +29,7 @@ class Ret:
             light_water,
         )
 
+        @jit(nopython=True)
         def closest_color(rgb):
             r, g, b = rgb
             color_diffs = []
@@ -69,22 +71,23 @@ class Ret:
         # im_arr.setflags(write=1)
         # print(im_arr)
         print(np.shape(im_arr))
-        test = Image.fromarray(np.uint8(im_arr))
+        # test = Image.fromarray(np.uint8(im_arr))
 
         print("running...")
-        for i, row in enumerate(im_arr):
-            for j, col in enumerate(row):
-                rgb =[0,0,0]
-                rgb[0] = col[0]
-                rgb[1] = col[1]
-                rgb[2] = col[2]
-                for iter in range(0,3):
-                    # im_arr[i][j][iter] = closest_color(rgb)[iter]
-                    np.put(im_arr[i][j], iter,closest_color(rgb)[iter] )
+        @jit(nopython=True)
+        def speedupTest(image_array):
+            for i, row in enumerate(image_array):
+                for j, col in enumerate(row):
+                    image_array[i][j] = closest_color(col)
 
-        test = Image.fromarray(np.uint8(im_arr))
+            return image_array
+        
+        im_arr = speedupTest(im_arr)
 
-        if show: test.resize(im.size, Image.Resampling.NEAREST).show()
+        # im_arr = generateStuff(im_arr)
+        # test = Image.fromarray(np.uint8(im_arr))
+
+        # if show: test.resize(im.size, Image.Resampling.NEAREST).show()
         
 
 
