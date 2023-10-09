@@ -39,15 +39,11 @@ FLAME_RADIUS = 3
 ENTITY_WIDTH = 1
 ENTITY_HEIGHT = ENTITY_WIDTH
 BURN_RATE = 10
-SECOND_PER_FRAME_MIN = 0.05
+SECOND_PER_FRAME_MIN = 0.2
 
 SIMULATION_HEIGHT = SCREEN_HEIGHT - CONTROLS_HEIGHT
 
- # Define a player object by extending pygame.sprite.Sprite
-    # The surface drawn on the screen is now an attribute of 'player'
 def main():
-    
-    data = {}
     # Initialize pygame
     pygame.init()
 
@@ -57,21 +53,15 @@ def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), flags=flags)
     screen.set_alpha(None)
 
-
-    # Create and populate tree list
-    #entities = basicInitialization()
-    
     def start():
         menuRun = False
         pygame.display.quit()
         screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), flags=flags)
         entityData = numpyInitialization()
-        # print(jitTest(entityData))
-        entityData = startupLoop(entityData, screen)
+        entityData = preGameLoop(entityData, screen)
 
         startFire(entityData)
-        mainLoop(entityData, screen, data)
-        graphData(data)
+        mainLoop(entityData, screen)
     #imported image
     myimage = pygame_menu.baseimage.BaseImage(
         image_path = "bush.jpg",
@@ -128,7 +118,8 @@ def basicInitialization():
 
     return np.array(entitiesData)
 
-def startupLoop(entityData, screen):
+
+def preGameLoop(entityData, screen):
     rectArray = []
     buttonList = []
     buttonList.append(Button(
@@ -173,8 +164,6 @@ def startupLoop(entityData, screen):
         feedback="Fire Break"
     ))
 
-    
-
     pygame.display.flip()
     while True:
         # for loop through the event queue
@@ -191,7 +180,7 @@ def startupLoop(entityData, screen):
             if buttonList[0].click(event):
                 return entityData
             if buttonList[1].click(event):
-                entityData = loadPleasanton(entityData)
+                entityData = loadPreset(entityData)
                 pygame.display.flip()
                 # return entities
             if buttonList[2].click(event):
@@ -214,6 +203,7 @@ def startupLoop(entityData, screen):
                     if button != buttonList[5] and button.on:
                         button.change_text(button.original, "blue")
                         button.on = False
+        # Update Display
         for y, row in enumerate(entityData):
             rectArray.append([])
             for x, entity in enumerate(row):
@@ -239,9 +229,8 @@ def startupLoop(entityData, screen):
                         pygame.draw.rect(screen, (entity[0], 0, 0), rect)
                 if entity[3] == 3:
                     pygame.draw.rect(screen, (0, 0, 200), rect)
-        # Lets you draw water
+        # Lets you draw 
         if pygame.mouse.get_pressed()[0]:
-            
             mouseX = pygame.mouse.get_pos()[0]
             mouseY = pygame.mouse.get_pos()[1] - CONTROLS_HEIGHT
             column = int(mouseX / ENTITY_WIDTH)
@@ -272,31 +261,20 @@ def startupLoop(entityData, screen):
         
 
 def startFire(entityData):
-    # entities[0].setOnFire()
-    while True:
-        y = random.randrange(0, int((SCREEN_HEIGHT-CONTROLS_HEIGHT)/ENTITY_HEIGHT))
-        x = random.randrange(0, int(SCREEN_WIDTH/ENTITY_WIDTH))
-        entityData[y][x][2] = 1
-        break
-                      
-def mainLoop(entityData, screen, data):
-    data["flameCount"] = []    
-    data["totalFireChance"] = []
-    data["blocksBurned"] = []
-    data["percentBurned"] = []
-    data["numBlocks"] = len(entityData) * len(entityData[0])
-    collectData = True
-    # Main loop
-    loopCount = 0
-    running = True
-    # d_pixelupdates = cuda.to_device([])
-    print("FIRE STARTED")
+    y = random.randrange(0, int((SCREEN_HEIGHT-CONTROLS_HEIGHT)/ENTITY_HEIGHT))
+    x = random.randrange(0, int(SCREEN_WIDTH/ENTITY_WIDTH))
+    entityData[y][x][2] = 1
 
-    firstRun = True
+
+def mainLoop(entityData, screen):
+    running = True
+    print("FIRE STARTED")
+    
     while running:
         t1 = time()
         prevEntityData = entityData
-
+        
+        # Handle quit
         for event in pygame.event.get():
             # Check for KEYDOWN event
             if event.type == KEYDOWN:
@@ -306,112 +284,111 @@ def mainLoop(entityData, screen, data):
             # Check for QUIT event. If QUIT, then set running to false.
             elif event.type == QUIT:
                 running = False
-            
+        
+        # Update fires
         entityData = updateFire(entityData)
 
+        # Update display
+        # Returns [(x, y, red, green, blue)]
         rects = []
-        count = 0
         @jit(nopython=True, cache=True)
-        def testFunc(entityData, prevEntityData):
-            testArr = []
-            for y in range(entityData.shape[0]):
-                for x in range(entityData.shape[1]):
-                    # if (entityData[y][x] == prevEntityData[y][x]).all():
-                    #     continue
-                    if entityData[y][x][2] == 0:
+        def calcColors(entityData, prevEntityData):
+            updateArr = []
+            for x in range(entityData.shape[0]):
+                for y in range(entityData.shape[1]):
+                    # If it's not on fire, don't update
+                    if entityData[x][y][2] == 0:
                         continue
-
-                    if entityData[y][x][3] == 0:
-                        testArr.append((y, x, int(entityData[y][x][0]), 0, 0))
-                    elif entityData[y][x][3] == 1:
-                        testArr.append((y, x, 50, 50, 50))
-                    elif entityData[y][x][3] == 2:
-                        testArr.append((y, x, int(entityData[y][x][0]), 0, 0))
-                    elif entityData[y][x][3] == 3:
-                        testArr.append((y, x, 0, 0, 200))
-            return testArr
+                    
+                    # Choose color based on entity type
+                    if entityData[x][y][3] == 0:
+                        updateArr.append((x, y, int(entityData[x][y][0]), 0, 0))
+                    elif entityData[x][y][3] == 1:
+                        updateArr.append((x, y, 50, 50, 50))
+                    elif entityData[x][y][3] == 2:
+                        updateArr.append((x, y, int(entityData[x][y][0]), 0, 0))
+                    elif entityData[x][y][3] == 3:
+                        updateArr.append((x, y, 0, 0, 200))
+            return updateArr
         
-        testArr = testFunc(entityData, prevEntityData)
+        updateArr = calcColors(entityData, prevEntityData)
 
-
-        for item in testArr:
-            rect = Rect(item[1]*ENTITY_WIDTH, (item[0]*ENTITY_HEIGHT+CONTROLS_HEIGHT), ENTITY_WIDTH, ENTITY_HEIGHT)
+        # Update display with new pixels
+        for update in updateArr:
+            rect = Rect(update[1]*ENTITY_WIDTH, (update[0]*ENTITY_HEIGHT+CONTROLS_HEIGHT), ENTITY_WIDTH, ENTITY_HEIGHT)
             rects.append(rect)
-            pygame.draw.rect(screen, (item[2], item[3], item[4]), rect) 
+            pygame.draw.rect(screen, (update[2], update[3], update[4]), rect) 
         pygame.display.update(rects)
     
-    
+        # Frame rate limiter
         while time()-t1 < SECOND_PER_FRAME_MIN:
-            sleep(0.05)
+            sleep(SECOND_PER_FRAME_MIN/5)
+
 
 @jit(nopython=True)
 def updateFire(entityData):
-    test = 0
-    # Draw the trees on the screen
-    for y, row in enumerate(entityData):
-        for x, entity in enumerate(row):
-            if entity[2] == 0:
+    # Iterate through all pixels
+    for x in range(entityData.shape[0]):
+        for y in range(entityData.shape[1]):
+            # If the pixel isn't on fire, skip
+            if entityData[x][y][2] == 0:
                 continue
+            
+            # Burn some of the pixels fuel and make sure fuel isn't negative
+            entityData[x][y][0] -= BURN_RATE
+            if entityData[x][y][0] < 0:
+                entityData[x][y][0] = 0
+                entityData[x][y][2] = 0
     
-            entity[0] -= BURN_RATE
-            if entity[0] < 0:
-                entity[0] = 0
-                entity[2] = 0
+            xOffset = FLAME_RADIUS
 
-    
-            yOffset = FLAME_RADIUS
-
-            while yOffset > int(np.negative(FLAME_RADIUS)):
-                xOffset = FLAME_RADIUS
-                if len(entityData) <= yOffset+y or yOffset+y < 0:
+            # While the current xOffset is within flame radius 
+            while xOffset > int(np.negative(FLAME_RADIUS)):
+                yOffset = FLAME_RADIUS
+                # Check that the element will actually exist
+                if xOffset+x < 0:
+                    break
+                elif entityData.shape[0] <= xOffset+x:
+                    xOffset -= 1
+                    continue
+                # While the current yOffset is within flame radius
+                while yOffset > int(np.negative(FLAME_RADIUS)):
+                    # Handle out of bounds and div by 0
+                    if yOffset+y < 0:
+                        break
+                    elif entityData.shape[1] <= yOffset+y or (xOffset == 0 and yOffset == 0):
                         yOffset -= 1
                         continue
-                while xOffset > int(np.negative(FLAME_RADIUS)):
-                    #Handle out of bounds/division by 0
-                    if len(entityData[0]) <= xOffset+x or xOffset+x < 0  or (xOffset == 0 and yOffset == 0):
-                        xOffset -= 1
-                        continue
-                    entityTwo = entityData[y+yOffset][x+xOffset]
+                    # If the target entity is already on fire or out of fuel, skip 
+                    entityTwo = entityData[x+xOffset][y+yOffset]
                     if entityTwo[2] == 1 or entityTwo[0] <= 0:
-                        xOffset -= 1
+                        yOffset -= 1
                         continue
-
+                    
+                    # Calculate distance between target and current pixel
                     distance = sqrt(pow(xOffset, 2) + pow(yOffset, 2))
-                    if distance > 10:
-                        continue
 
-                    # Determine how likely a tree is to be lit on fire
+                    # Determine how likely a entity is to be lit on fire
                     fireChance = (1 / (pow(distance, 3))) * entityTwo[1] 
 
-                    # Check if the tree will get lit on fire
+                    # Check if the entity will get lit on fire and light it
                     val = random.random()
                     if  val <= fireChance:
                         entityTwo[2] = 1
-                    xOffset -= 1
-                yOffset -= 1
+                    yOffset -= 1
+                xOffset -= 1
     
     return entityData
 
-def cudaTester():
-    arr = numpyInitialization()
-    threadsperblock = (16, 16)
-    blockspergrid_x = ceil(arr.shape[0] / threadsperblock[0])
-    blockspergrid_y = ceil(arr.shape[1] / threadsperblock[1])
-    blockspergrid = (blockspergrid_x, blockspergrid_y)
-
-    
-    rng_states = cuda.random.create_xoroshiro128p_states(threadsperblock[0] * threadsperblock[1] *blockspergrid[0]* blockspergrid[1], seed=14575389)
-    d_rng_states = cuda.to_device(rng_states)
-    d_readarray = cuda.to_device(arr)
-    d_newarray = cuda.to_device(arr)
-    updateFireCuda[threadsperblock, blockspergrid](d_readarray, d_newarray, FLAME_RADIUS, d_rng_states)
 
 @jit(nopython=True, cache=True)
 def numpyInitialization():
+    # Calculate size of array and initialize it
     xEntities = (round(SCREEN_WIDTH / ENTITY_WIDTH))
     yEntities = (round((SCREEN_HEIGHT - CONTROLS_HEIGHT)/ENTITY_HEIGHT))
     entities = np.zeros((xEntities, yEntities, 4))
 
+    # Fill array with grass with random fuel
     for row in range(entities.shape[0]):
         for col in range(entities.shape[1]):
             entities[row][col][0] = random.randrange(50, 100)
@@ -421,85 +398,33 @@ def numpyInitialization():
 
     return entities
 
-@cuda.jit(cache=True)
-def updateFireCuda(readOnlyEntityData, newEntityData, flameRadius, burn_rate, rng_states):
-    row, col = cuda.grid(2)
 
-    if readOnlyEntityData[row][col][2] == 0:
-        return
-    
-    newEntityData[row][col][0] -= burn_rate
-    if newEntityData[row][col][0] < 0:
-        newEntityData[row][col][0] = 0
-        newEntityData[row][col][2] = 0
-
-    yOffset = flameRadius
-    while yOffset > -flameRadius:
-        xOffset = flameRadius
-
-        if readOnlyEntityData.shape[0] <= (yOffset + row) or (yOffset + row) < 0:
-            yOffset -= 1
-            continue
-
-        while xOffset > -flameRadius:
-            if readOnlyEntityData.shape[1] <= (xOffset + col) or (xOffset + col) < 0 or readOnlyEntityData[yOffset + row][xOffset + col][2] == 1 or readOnlyEntityData[yOffset + row][xOffset + col][0] <= 0:
-                xOffset -= 1
-                continue
-
-            distance = sqrt(pow(xOffset, 2) + pow(yOffset, 2))
-
-            fireChance = (1 / (pow(distance, 3))) * readOnlyEntityData[yOffset + row][xOffset+col][1]
-            
-            randomNum = xoroshiro128p_uniform_float32(rng_states, cuda.grid(1))
-            if randomNum <= fireChance:
-                newEntityData[yOffset + row][xOffset + col][2] = 1
-            xOffset -= 1
-        yOffset -= 1
-    # pixelUpdates = []
-    # newEntity = newEntityData[row][col]
-    # oldEntity = readOnlyEntityData[row][col]
-    # if newEntity[0] != oldEntity[0] or newEntity[1] != oldEntity[1] or newEntity[2] != oldEntity[2] or newEntity[3] != oldEntity[3]:
-    #     if newEntityData[row][col][3] == 0:
-    #         pixelUpdates.append((row, col, int(newEntityData[row][col][0]), 0, 0))
-    #     elif newEntityData[row][col][3] == 1:
-    #         pixelUpdates.append((row, col, 50, 50, 50))
-    #     elif newEntityData[row][col][3] == 2:
-    #         pixelUpdates.append((row, col, int(newEntityData[row][col][0]), 0, 0))
-    #     elif newEntityData[row][col][3] == 3:
-    #         pixelUpdates.append((row, col, 0, 0, 200))
-
-def loadPleasanton(data):
-    # arr = Ret.ret_arr(800)
-    pixelArr = Ret.ret_arr(int(SCREEN_WIDTH/ENTITY_WIDTH), 'C:/Users/bryan/Documents/code/fire/fire-sim/red_pink.jpg', True)
+def loadPreset(data):
+    # get converted image from im_resize
+    pixelArr = Ret.ret_arr(int(SCREEN_WIDTH/ENTITY_WIDTH), 'C:/Users/bryan/Documents/code/fire/fire-sim/pleasanton.jpg', True)
     @jit(nopython=True)
     def convertArray(arr, entityData):
-        for i, row in enumerate(arr):
-            for j, col in enumerate(row):
-                if np.array_equal(col , [245,35,93]):
+        # Iterate over image array
+        for i in range(arr.shape[0]):
+            for j in range(arr.shape[1]):
+                # Determine conversion based on color
+                if np.array_equal(arr[i][j] , [245,35,93]):
                     entityData[i][j][0] = 0
                     entityData[i][j][1] = 0
                     entityData[i][j][2] = 0
                     entityData[i][j][3] = 1
-                if np.array_equal(col , [135,145,148]):
-                    #make it a building colotemp = Road(row, col)
+                elif np.array_equal(arr[i][j] , [135,145,148]):
                     entityData[i][j][0] = 200
                     entityData[i][j][1] = 0.05
                     entityData[i][j][2] = 0
                     entityData[i][j][3] = 2
-                    
-                if np.array_equal(col , [137,159,68]):
-                    #make it a light green tree collor
+                elif np.array_equal(arr[i][j] , [137,159,68]) or np.array_equal(arr[i][j] , [24,35,33]):
+                    #make it a light green tree color
                     entityData[i][j][0] = random.randrange(50, 100)
                     entityData[i][j][1] = 0.2
                     entityData[i][j][2] = 0
                     entityData[i][j][3] = 0
-
-                if np.array_equal(col , [24,35,33]):
-                    entityData[i][j][0] = random.randrange(50, 100)
-                    entityData[i][j][1] = 0.2
-                    entityData[i][j][2] = 0
-                    entityData[i][j][3] = 0
-                if np.array_equal(col , [88,183,135]) or np.array_equal(col , [255,0,214]):
+                elif np.array_equal(arr[i][j] , [88,183,135]) or np.array_equal(arr[i][j] , [255,0,214]):
                     #make it a water color
                     entityData[i][j][0] = 0
                     entityData[i][j][1] = 0
