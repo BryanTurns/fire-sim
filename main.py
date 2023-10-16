@@ -36,10 +36,10 @@ CONTROLS_HEIGHT = 200
 SCREEN_HEIGHT = 1000
 SCREEN_WIDTH = SCREEN_HEIGHT - CONTROLS_HEIGHT
 FLAME_RADIUS = 3
-ENTITY_WIDTH = 2
+ENTITY_WIDTH = 1
 ENTITY_HEIGHT = ENTITY_WIDTH
 BURN_RATE = 10
-SECOND_PER_FRAME_MIN = 0.1
+SECOND_PER_FRAME_MIN = 0.2
 
 SIMULATION_HEIGHT = SCREEN_HEIGHT - CONTROLS_HEIGHT
 
@@ -56,17 +56,12 @@ def main():
     flags = DOUBLEBUF
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), flags=flags)
     screen.set_alpha(None)
-
-
-    # Create and populate tree list
-    #entities = basicInitialization()
     
     def start():
         menuRun = False
         pygame.display.quit()
         screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), flags=flags)
         entityData = numpyInitialization()
-        # print(jitTest(entityData))
         entityData = startupLoop(entityData, screen)
 
         startFire(entityData)
@@ -114,20 +109,6 @@ def main():
 
         pygame.display.update() 
 
-def basicInitialization():
-    entitiesData = []
-    for row in range(round(SCREEN_WIDTH / ENTITY_WIDTH)):
-        entitiesData.append([])
-        for col in range(round((SCREEN_HEIGHT - CONTROLS_HEIGHT)/ ENTITY_HEIGHT)):
-            entitiesData[row].append([])          
-            entitiesData[row][col].append(random.randrange(50, 100))
-            entitiesData[row][col].append(0.2)
-            entitiesData[row][col].append(0)
-            entitiesData[row][col].append(0)
-
-
-    return np.array(entitiesData)
-
 def startupLoop(entityData, screen):
     rectArray = []
     buttonList = []
@@ -172,8 +153,6 @@ def startupLoop(entityData, screen):
         bg="blue",
         feedback="Fire Break"
     ))
-
-    
 
     pygame.display.flip()
     while True:
@@ -241,7 +220,6 @@ def startupLoop(entityData, screen):
                     pygame.draw.rect(screen, (0, 0, 200), rect)
         # Lets you draw water
         if pygame.mouse.get_pressed()[0]:
-            
             mouseX = pygame.mouse.get_pos()[0]
             mouseY = pygame.mouse.get_pos()[1] - CONTROLS_HEIGHT
             column = int(mouseX / ENTITY_WIDTH)
@@ -272,7 +250,6 @@ def startupLoop(entityData, screen):
         
 
 def startFire(entityData):
-    # entities[0].setOnFire()
     while True:
         y = random.randrange(0, int((SCREEN_HEIGHT-CONTROLS_HEIGHT)/ENTITY_HEIGHT))
         x = random.randrange(0, int(SCREEN_WIDTH/ENTITY_WIDTH))
@@ -302,8 +279,6 @@ def mainLoop(entityData, screen, data):
     d_newarray = cuda.to_device(entityData)
     d_flameradius = FLAME_RADIUS
     d_burnrate = BURN_RATE
-    # d_pixelupdates = cuda.to_device([])
-
 
     firstRun = True
     while running:
@@ -323,11 +298,8 @@ def mainLoop(entityData, screen, data):
         updateFireCuda[blockspergrid, threadsperblock](d_readarray, d_newarray, d_flameradius, d_burnrate, d_rng_states)
         d_readarray.copy_to_device(d_newarray) 
         entityData = d_newarray.copy_to_host()    
-        # pixeLUpdates = d_pixelupdates.copy_to_host()
-        # print(pixeLUpdates)
 
         rects = []
-        count = 0
         @jit(nopython=True, cache=True)
         def testFunc(entityData, prevEntityData):
             testArr = []
@@ -360,69 +332,6 @@ def mainLoop(entityData, screen, data):
     
         while time()-t1 < SECOND_PER_FRAME_MIN:
             sleep(0.05)
-        print(time()-t1)
-@jit(nopython=True)
-def updateFire(entityData):
-    test = 0
-    # Draw the trees on the screen
-    for y, row in enumerate(entityData):
-        for x, entity in enumerate(row):
-            if entity[2] == 0:
-                continue
-    
-            entity[0] -= 10
-            if entity[0] < 0:
-                entity[0] = 0
-                entity[2] = 0
-
-            #     # If the current tree is on fire, check if it lights other trees on fire
-            # SCREEN_WIDTH / ENTITY_WIDTH gets the number of elements in a row
-            yOffset = FLAME_RADIUS
-
-            while yOffset > int(np.negative(FLAME_RADIUS)):
-                xOffset = FLAME_RADIUS
-                if len(entityData) <= yOffset+y or yOffset+y < 0:
-                        yOffset -= 1
-                        continue
-                while xOffset > int(np.negative(FLAME_RADIUS)):
-                    #Handle out of bounds/division by 0
-                    if len(entityData[0]) <= xOffset+x or xOffset+x < 0  or (xOffset == 0 and yOffset == 0):
-                        xOffset -= 1
-                        continue
-                    entityTwo = entityData[y+yOffset][x+xOffset]
-                    if entityTwo[2] == 1 or entityTwo[0] <= 0:
-                        xOffset -= 1
-                        continue
-
-                    distance = sqrt(pow(xOffset, 2) + pow(yOffset, 2))
-                    if distance > 10:
-                        continue
-
-                    # Determine how likely a tree is to be lit on fire
-                    fireChance = (1 / (pow(distance, 3))) * entityTwo[1] 
-
-                    # Check if the tree will get lit on fire
-                    val = random.random()
-                    if  val <= fireChance:
-                        entityTwo[2] = 1
-                    xOffset -= 1
-                yOffset -= 1
-    
-    return entityData
-
-def cudaTester():
-    arr = numpyInitialization()
-    threadsperblock = (16, 16)
-    blockspergrid_x = ceil(arr.shape[0] / threadsperblock[0])
-    blockspergrid_y = ceil(arr.shape[1] / threadsperblock[1])
-    blockspergrid = (blockspergrid_x, blockspergrid_y)
-
-    
-    rng_states = cuda.random.create_xoroshiro128p_states(threadsperblock[0] * threadsperblock[1] *blockspergrid[0]* blockspergrid[1], seed=14575389)
-    d_rng_states = cuda.to_device(rng_states)
-    d_readarray = cuda.to_device(arr)
-    d_newarray = cuda.to_device(arr)
-    updateFireCuda[threadsperblock, blockspergrid](d_readarray, d_newarray, FLAME_RADIUS, d_rng_states)
 
 @jit(nopython=True, cache=True)
 def numpyInitialization():
@@ -473,18 +382,6 @@ def updateFireCuda(readOnlyEntityData, newEntityData, flameRadius, burn_rate, rn
                 newEntityData[yOffset + row][xOffset + col][2] = 1
             xOffset -= 1
         yOffset -= 1
-    # pixelUpdates = []
-    # newEntity = newEntityData[row][col]
-    # oldEntity = readOnlyEntityData[row][col]
-    # if newEntity[0] != oldEntity[0] or newEntity[1] != oldEntity[1] or newEntity[2] != oldEntity[2] or newEntity[3] != oldEntity[3]:
-    #     if newEntityData[row][col][3] == 0:
-    #         pixelUpdates.append((row, col, int(newEntityData[row][col][0]), 0, 0))
-    #     elif newEntityData[row][col][3] == 1:
-    #         pixelUpdates.append((row, col, 50, 50, 50))
-    #     elif newEntityData[row][col][3] == 2:
-    #         pixelUpdates.append((row, col, int(newEntityData[row][col][0]), 0, 0))
-    #     elif newEntityData[row][col][3] == 3:
-    #         pixelUpdates.append((row, col, 0, 0, 200))
 
 def loadPleasanton(data):
     # arr = Ret.ret_arr(800)
